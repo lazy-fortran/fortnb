@@ -1,5 +1,7 @@
 # fortnb
 
+> **Note**: This project is experimental and currently not working. It is on hold pending alignment with [LFortran](https://lfortran.org/) and related tooling.
+
 **Fortran Notebook** - jupytext-style interactive computing with markdown/PDF output.
 
 ## Overview
