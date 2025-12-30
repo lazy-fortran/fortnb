@@ -1,5 +1,7 @@
 # fortnb
 
+> **Note**: This project is experimental and subject to major changes. APIs may change without notice.
+
 **Fortran Notebook** - jupytext-style interactive computing with markdown/PDF output.
 
 ## Overview
