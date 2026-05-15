@@ -1,78 +1,46 @@
 # fortnb
 
-> **Note**: This project is experimental and currently not working. It is on hold pending alignment with [LFortran](https://lfortran.org/) and related tooling.
+`fortnb` is an experimental notebook/literate-programming tool for Fortran.
 
-**Fortran Notebook** - jupytext-style interactive computing with markdown/PDF output.
+Current status: on hold. The repository contains notebook parsing, execution,
+rendering, and figure-capture experiments, but it is not currently a dependable
+notebook runtime.
 
-## Overview
+## Intended Role
 
-fnb provides jupytext-style notebook support for Fortran, enabling interactive computing, data visualization, and literate programming. It integrates with the lazy-fortran ecosystem for compilation and execution, generating markdown and PDF output rather than traditional Jupyter notebooks.
+`fortnb` should provide Jupytext-style Fortran notebooks that can render to
+Markdown/PDF and execute code through the Lazy Fortran toolchain.
 
-## Features
+Long-term flow:
 
-- Jupytext-style notebook parsing and execution
-- Interactive Fortran code cells (.f files)
-- Figure capture and visualization
-- Markdown and PDF output rendering
-- Integration with fortrun for code execution
-- Support for notebook conversion and format handling
+1. parse notebook-style `.f`/`.lf` files
+2. execute code cells through `fortrun` or `ffc`
+3. capture stdout/stderr and figures
+4. render reproducible Markdown/PDF output
 
-## Building
+## Current Limits
+
+- execution depends on toolchain pieces that are still experimental
+- figure capture currently includes placeholder behavior
+- Lazy Fortran execution should wait for the FortFront/`ffc` compiler path to
+  stabilize
+
+## Build
 
 ```bash
 fpm build
 ```
 
-## Usage
+## Roadmap
 
-Execute a notebook:
-```bash
-fnb run analysis.f
-```
+Open issue:
 
-Render to markdown:
-```bash
-fnb render analysis.f -o output.md
-```
+- [#1](https://github.com/lazy-fortran/fortnb/issues/1): Jupytext-like
+  features for `.f` files with Markdown output
 
-Render to PDF:
-```bash
-fnb render analysis.f -o output.pdf
-```
-
-## Notebook Format
-
-fnb uses jupytext-style .f files with special comments for cells and markdown:
-
-```fortran
-! ## Hello World Example
-! This is a markdown cell explaining the code below
-
-x = 5.0
-y = 3.0
-result = sqrt(x**2 + y**2)
-print *, "Distance:", result
-
-! ## Visualization
-! Generate a simple plot
-
-! (figure capture and output will be included in rendered output)
-```
-
-## Dependencies
-
-- [fortfront](https://github.com/lazy-fortran/fortfront) - Frontend analysis
-- json-fortran - JSON parsing
-- fortrun (runtime) - Code execution and caching
-
-## Architecture
-
-- `notebook_types` - Notebook data structures
-- `notebook_parser` - Notebook parsing from JSON
-- `notebook_executor` - Cell execution engine
-- `notebook_renderer` - Markdown/PDF output rendering
-- `figure_capture` - Plot and figure handling
+Near-term work should focus on format parsing/rendering. Compiler/runtime
+integration should wait for `ffc`.
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT. See `LICENSE`.
