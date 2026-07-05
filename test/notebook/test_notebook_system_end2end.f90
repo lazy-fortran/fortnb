@@ -9,9 +9,9 @@ program test_notebook_system
     ! Keep temp directory alive for the entire test
     type(temp_dir_manager) :: shared_temp_mgr
 
-    ! Skip this test on Windows CI - it runs fortran CLI 4 times
+    ! Skip this test on Windows CI - it runs the fnb CLI several times
     if (get_os_type() == OS_WINDOWS .and. len_trim(get_env('CI', '')) > 0) then
-        print *, 'SKIP: test_notebook_system_end2end on Windows CI (runs fortran CLI 4 times)'
+        print *, 'SKIP: test_notebook_system_end2end on Windows CI (runs fnb CLI 4 times)'
         stop 0
     end if
 
@@ -53,27 +53,26 @@ contains
         character(len=:), allocatable :: output
         integer :: exit_code
 
-        print *, 'Test 1: CLI help includes notebook options'
+        print *, 'Test 1: CLI usage lists notebook commands'
 
-        ! Execute help command
-        command = 'fpm run fortran -- --help'
+        ! Invoke without arguments to print the usage banner
+        command = 'fpm run fnb'
         call execute_and_capture(command, output, exit_code)
 
-        ! Check for notebook-related content
-        if (index(output, '--notebook') == 0) then
-            print *, '  FAIL: --notebook flag not found in help'
+        if (index(output, 'Commands:') == 0) then
+            print *, '  FAIL: Commands section not found in usage'
             passed = .false.
             return
         end if
 
-        if (index(output, 'Notebook Mode:') == 0) then
-            print *, '  FAIL: Notebook Mode section not found in help'
+        if (index(output, 'render') == 0) then
+            print *, '  FAIL: render command not found in usage'
             passed = .false.
             return
         end if
 
-        if (index(output, '--output') == 0) then
-            print *, '  FAIL: --output flag not found in help'
+        if (index(output, '-o') == 0) then
+            print *, '  FAIL: -o option not found in usage'
             passed = .false.
             return
         end if
@@ -85,7 +84,7 @@ contains
     subroutine test_notebook_cli_execution(passed, output_file_path, temp_mgr)
         logical, intent(inout) :: passed
         character(len=*), intent(out) :: output_file_path
-        type(temp_dir_manager), intent(in) :: temp_mgr
+        type(temp_dir_manager), intent(inout) :: temp_mgr
         character(len=512) :: command
         character(len=:), allocatable :: output
         integer :: exit_code
@@ -98,8 +97,8 @@ contains
         output_file_path = output_file  ! Save for next test
 
         ! Execute notebook command
-        command = 'fpm run fortran -- --notebook '// &
-                  'example/notebook/simple_math.f -o "'//output_file//'"'
+        command = 'fpm run fnb -- render '// &
+                  'example/scientific/notebook/simple_math.f -o "'//output_file//'"'
         call execute_and_capture(command, output, exit_code)
 
         ! Check command succeeded
@@ -181,8 +180,8 @@ contains
 
             call temp_mgr%create('cache_perf_test')
             output_file = temp_mgr%get_file_path('test_cache_perf1.md')
-            command = 'fpm run fortran -- --notebook '// &
-                      'example/notebook/arrays_loops.f -o "'//output_file//'"'
+            command = 'fpm run fnb -- render '// &
+                      'example/scientific/notebook/arrays_loops.f -o "'//output_file//'"'
             call execute_and_capture(command, output1, exit_code1)
         end block
         call cpu_time(end_time)
@@ -196,8 +195,8 @@ contains
 
             call temp_mgr%create('cache_perf_test')
             output_file = temp_mgr%get_file_path('test_cache_perf2.md')
-            command = 'fpm run fortran -- --notebook '// &
-                      'example/notebook/arrays_loops.f -o "'//output_file//'"'
+            command = 'fpm run fnb -- render '// &
+                      'example/scientific/notebook/arrays_loops.f -o "'//output_file//'"'
             call execute_and_capture(command, output2, exit_code2)
         end block
         call cpu_time(end_time)

@@ -2,15 +2,14 @@ module notebook_executor
     use notebook_types
     use notebook_parser
     use notebook_output
-    use cache, only: get_cache_dir, get_content_hash, cache_exists
+    use cache, only: get_cache_dir, get_content_hash
     use cache_lock, only: acquire_lock, release_lock
-    use frontend_integration, only: compile_with_frontend, is_simple_fortran_file
     use, intrinsic :: iso_c_binding
-    use temp_utils, only: create_temp_dir, cleanup_temp_dir, get_temp_file_path, create_temp_file, mkdir
+    use temp_utils, only: create_temp_dir, cleanup_temp_dir, create_temp_file, mkdir
     use system_utils, only: sys_remove_file, sys_get_current_dir, escape_shell_arg
     use fpm_environment, only: get_os_type, OS_WINDOWS
     use fpm_filesystem, only: join_path
-    use logger_utils, only: debug_print, print_info, print_warning, print_error
+    use logger_utils, only: debug_print
     use string_utils, only: int_to_char, logical_to_char
     implicit none
     private
@@ -22,7 +21,8 @@ module notebook_executor
         end function c_getpid
     end interface
 
-    ! Types now imported from notebook_types module
+    ! Result types originate in notebook_types; re-export for callers.
+    public :: execution_result_t, cell_result_t
 
     ! Public procedures
     public :: execute_notebook
@@ -173,7 +173,6 @@ contains
         character(len=:), allocatable, intent(out) :: cache_key
 
         character(len=:), allocatable :: combined_content
-        character(len=32) :: hash_str
         integer :: i
 
         ! Combine all cell content for hashing
@@ -182,31 +181,9 @@ contains
     combined_content = trim(combined_content)//trim(notebook%cells(i)%content)//char(10)
         end do
 
-        ! Generate simple hash from content length and first/last chars
-        call generate_simple_hash(combined_content, cache_key)
+        cache_key = get_content_hash(combined_content)
 
     end subroutine generate_notebook_cache_key
-
-    subroutine generate_simple_hash(content, hash)
-        character(len=*), intent(in) :: content
-        character(len=:), allocatable, intent(out) :: hash
-
-        integer :: i, hash_val, content_len
-        character(len=16) :: hash_str
-
-        content_len = len(content)
-        hash_val = content_len
-
-        ! Simple hash based on content length and character sum
-        do i = 1, min(content_len, 1000)  ! Sample first 1000 chars
-            hash_val = hash_val + ichar(content(i:i))*i
-        end do
-
-        ! Convert to hex string
-        write (hash_str, '(z0)') hash_val
-        hash = trim(hash_str)
-
-    end subroutine generate_simple_hash
 
     subroutine check_notebook_cache(cache_dir, cache_key, cache_hit, project_dir)
         character(len=*), intent(in) :: cache_dir, cache_key
@@ -268,13 +245,23 @@ contains
         type(notebook_t), intent(in) :: notebook
         character(len=:), allocatable, intent(out) :: module_content
 
-        ! Minimal module content to avoid compiler corruption
-        module_content = 'module notebook_execution'//achar(10)// &
-                         'implicit none'//achar(10)// &
-                         'contains'//achar(10)// &
-                         'subroutine cell_1()'//achar(10)// &
-                         'end subroutine'//achar(10)// &
-                         'end module'
+        character(len=:), allocatable :: variables_section, procedures_section
+        integer :: i, cell_number
+
+        call analyze_notebook_variables(notebook, variables_section)
+
+        procedures_section = ""
+        cell_number = 0
+        do i = 1, notebook%num_cells
+            if (notebook%cells(i)%cell_type == CELL_CODE) then
+                cell_number = cell_number + 1
+                procedures_section = procedures_section// &
+                             generate_cell_procedure(notebook%cells(i), cell_number)// &
+                                     new_line('a')
+            end if
+        end do
+
+        call build_module_content(variables_section, procedures_section, module_content)
 
     end subroutine generate_notebook_module
 

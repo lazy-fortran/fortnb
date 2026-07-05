@@ -6,6 +6,7 @@ license = "MIT"
 
 [dependencies]
 fortfront = { git = "https://github.com/lazy-fortran/fortfront.git" }
+fx = { git = "git@github.com:lazy-fortran/fx.git", branch = "main" }
 json-fortran = { git = "https://github.com/jacobwilliams/json-fortran.git", tag = "8.3.0" }
 
 [build]
